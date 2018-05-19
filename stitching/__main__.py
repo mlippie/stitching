@@ -18,20 +18,21 @@ import skimage.util.montage
 @click.option("-o", "--output", type=click.Path(exists=False))
 @click.option("--image-size", default=55)
 @click.option("--montage-size", default=30)
+@click.option("--channel", "-c", multiple=True, type=int)
 
 
-def __main__(image, output, image_size, montage_size):
+def __main__(image, output, image_size, montage_size, channel):
     try:
         javabridge.start_vm(class_path=bioformats.JARS, max_heap_size='8G')
 
         os.mkdir(output)
 
-        __stitch(image, output, image_size, montage_size)
+        __stitch(image, output, image_size, montage_size, channel)
     finally:
         javabridge.kill_vm()
 
 
-def __stitch(filename, output, image_size, montage_size):
+def __stitch(filename, output, image_size, montage_size, channel):
     reader = bioformats.formatreader.get_image_reader("tmp", path=filename)
 
     image_count = javabridge.call(reader.metadata, "getImageCount", "()I")
@@ -41,7 +42,12 @@ def __stitch(filename, output, image_size, montage_size):
     n_chunks = __compute_chunks(image_count/2,montage_size)
     chunk_size = montage_size**2
 
-    for channel in range(channel_count):
+    if len(channel) > 0:
+        a = channel
+    else:
+        a = range(channel_count)
+
+    for channel in a:
         for chunk in range(n_chunks):
             try:
                 images = [
